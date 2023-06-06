@@ -1,0 +1,3 @@
+Please see the description of this package <a href="Operads_ReadMe.pdf">here</a>.
+
+Distribution Statement ‘A’ (Approved for Public Release, Distribution Unlimited). This work is supported in part by DARPA. The views, opinions, and/or findings expressed are those of the author(s) and should not be interpreted as representing the official views or policies of the Department of Defense or the U.S. Government.
