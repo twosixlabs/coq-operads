@@ -1,0 +1,6 @@
+-R . Operads
+Typecast.v
+TColoredOperads.v
+ColoredOperads.v
+OperadOfSets.v
+TOperadOfSets.v
