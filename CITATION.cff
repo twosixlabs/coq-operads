@@ -1,0 +1,19 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Operads package
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Zachary
+    family-names: Flores
+  - given-names: Angelo
+    family-names: Taranto
+  - given-names: Eric
+    family-names: Bond
+  - given-names: Yakir
+    family-names: Forman
+repository-code: 'https://github.com/twosixlabs/coq-operads/'
