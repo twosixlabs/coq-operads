@@ -3,13 +3,14 @@ Require Import List.
 From Hammer Require Import Hammer.
 Require Import Permutation.
 
-From Operads Require Import Typecast.
+From Operads Require Import Tarski.
+From Operads Require Import TTypecast.
 From Operads Require Import TColoredOperads.
 
 (* This is a modfication of the definition of compose from the 
    multiCompose.v file to eliminate dependence on vectors,
    using lists instead. The type of the arguments is also changed from type to T, the 
-   collection of types inductively defined in TColoredOperads.v.*)
+   collection of types inductively defined in Tarski.*)
 
 Fixpoint arr (ts : list T) (t' : T) : T := match ts with
   | nil => t'
@@ -69,24 +70,12 @@ induction l1 as [|h l1 IH].
 - rewrite <- app_comm_cons. rewrite arr_equation_2. rewrite IH. reflexivity.
 Qed.
 
-Lemma El_arr_append {l1 l2 : list T} {d : T} : El (arr (l1 ++ l2) d) = El (arr l1 (arr l2 d)).
-Proof.
-rewrite arr_append. reflexivity.
-Qed.
-
 (* And occasionally useful to apply it twice. We give this a name too. *)
 Lemma double_arr_append {l1 l2 l3 : list T} {d : T} : 
   arr (l1 ++ l2 ++ l3) d = arr l1 (arr l2 (arr l3 d)).
 Proof.
 rewrite !arr_append. reflexivity.
 Qed.
-
-Lemma El_double_arr_append {l1 l2 l3 : list T} {d : T} : 
-  El (arr (l1 ++ l2 ++ l3) d) = El (arr l1 (arr l2 (arr l3 d))).
-Proof.
-rewrite double_arr_append. reflexivity.
-Qed.
-
 
 (*We now define the multicomposition structure as an operad. *)
 
@@ -114,12 +103,6 @@ Proof.
 symmetry. apply double_arr_append.
 Qed.
 
-Lemma El_insert_arr {i : nat} {d : T} {c b : list T} :
-  El (arr (firstn i c) (arr b (arr (skipn (i + 1) c) d))) = El (arr (insert i c b) d).
-Proof.
-rewrite insert_arr. reflexivity.
-Qed.
-
 (* And this is the equality needed to typecast on the LHS: *)
 Lemma fn_arr {i n : nat} {d ci : T} {c : list T} (l : length c = n) (n1 : 1 <= n) 
   (il : i < n) (p : lookupT i c = ci) : 
@@ -131,19 +114,12 @@ assert (ii: firstn i c ++ ci :: skipn (i + 1) c = insert i c (ci :: nil)). refle
 rewrite ii. rewrite ic. reflexivity.
 Qed.
 
-Lemma El_fn_arr {i n : nat} {d ci : T} {c : list T} (l : length c = n) (n1 : 1 <= n) 
-  (il : i < n) (p : lookupT i c = ci) : 
-  El (arr (firstn i c) (ci → (arr (skipn (i + 1) c) d))) = El (arr c d).
-Proof.
-rewrite (fn_arr l n1 il p). reflexivity.
-Qed.
-
 (* The typecast for the RHS: *)
 Definition insertCast {i : nat} {d : T} {c b : list T}
   (e : El (arr (firstn i c) (arr b (arr (skipn (i + 1) c) d)))) : 
    El (setsOp 〘d,insert i c b〙).
 Proof.
-rewrite El_insert_arr in e. apply e.
+rewrite insert_arr in e. apply e.
 Defined.
 
 (* The typecast for one component of the LHS: *)
@@ -152,7 +128,7 @@ Definition insertCast0 {i n : nat} {d ci : T} {c b : list T}
   (e : El (setsOp 〘 d, c 〙) ) : 
   (El (arr (firstn i c) (ci → arr (skipn (i + 1) c) d)) ).
 Proof.
-rewrite (El_fn_arr l n1 il p). apply e.
+rewrite (fn_arr l n1 il p). apply e.
 Defined.
 
 (*The typecast for the full LHS:*)
@@ -183,13 +159,13 @@ Qed.
 and therefore typecasts:*)
 Lemma unityLCast_is_dept {operad : Operad} {d : T} {c : list T} :
   @unityLCast operad d c = dep_typecast 
-        (PA := fun x => El ( operad〘d,x〙))(eq:=(unityLInsert c)).
+        (PA := fun x => operad〘d,x〙)(eq:=(unityLInsert c)).
 Proof.
 reflexivity.
 Qed.
 
 Lemma unityLCast_is_typecast {operad : Operad}{d : T} {c : list T} :
-  @unityLCast operad d c = typecast (DepTypeeq (PA:=(fun x => El ( operad〘d,x〙))) (unityLInsert c)).
+  @unityLCast operad d c = typecast (DepTypeeq (PA:=(fun x => operad〘d,x〙)) (unityLInsert c)).
 Proof.
 rewrite unityLCast_is_dept. rewrite dep_typecast_is_typecast. reflexivity.
 Qed.
@@ -197,7 +173,7 @@ Qed.
 
 Lemma unityRCast_is_dept {operad : Operad}{d ci:T}{c: list T}(n i: nat)(p: lookupT i c = ci)(q0: 1 <= n)
   (q1: i < n)(r: length c = n) :
-  @unityRCast operad d ci c n i p q0 q1 r = dep_typecast (PA := fun x => El (operad〘d,x〙)) 
+  @unityRCast operad d ci c n i p q0 q1 r = dep_typecast (PA := fun x => operad〘d,x〙) 
     (eq:= (@unityRInsert T (|𝕦|) c ci n i q0 q1 r p)).
 Proof.
 reflexivity.
@@ -205,7 +181,7 @@ Qed.
 
 Lemma unityRCast_is_typecast {operad : Operad}{d ci:T}{c: list T}(n i: nat)(p: lookupT i c = ci)(q0: 1 <= n)
   (q1: i < n)(r: length c = n) :
-  @unityRCast operad d ci c n i p q0 q1 r = typecast (DepTypeeq (PA:= fun x => El (operad〘d,x〙))
+  @unityRCast operad d ci c n i p q0 q1 r = typecast (DepTypeeq (PA:= fun x => operad〘d,x〙)
     (@unityRInsert T (|𝕦|) c ci n i q0 q1 r p)).
 Proof.
 rewrite unityRCast_is_dept. rewrite dep_typecast_is_typecast. reflexivity.
@@ -214,7 +190,7 @@ Qed.
 Lemma vertCast_is_dept{operad : Operad} {n m i j : nat}
           {d: T} {a b c : list T} {p0: 1 <= n}{p1 : 1 <= m}{p2: i < n} 
             {p3: j < m} {p4: length c = n}{p5: length b = m} :
-  @vertCast operad n m i j d a b c p0 p1 p2 p3 p4 p5  = dep_typecast (PA := fun x => El (operad〘d,x〙)) 
+  @vertCast operad n m i j d a b c p0 p1 p2 p3 p4 p5  = dep_typecast (PA := fun x => operad〘d,x〙) 
     (eq:= (vertInsert n m i j a b c p0 p1 p2 p3 p4 p5) ).
 Proof.
 reflexivity.
@@ -223,7 +199,7 @@ Qed.
 Lemma vertCast_is_typecast{operad : Operad} {n m i j : nat}
           {d: T} {a b c : list T} {p0: 1 <= n}{p1 : 1 <= m}{p2: i < n} 
             {p3: j < m} {p4: length c = n}{p5: length b = m} :
-  @vertCast operad n m i j d a b c p0 p1 p2 p3 p4 p5  = typecast (DepTypeeq (PA:= fun x => El (operad〘d,x〙))
+  @vertCast operad n m i j d a b c p0 p1 p2 p3 p4 p5  = typecast (DepTypeeq (PA:= fun x => operad〘d,x〙)
     (vertInsert n m i j a b c p0 p1 p2 p3 p4 p5)).
 Proof.
 rewrite vertCast_is_dept. rewrite dep_typecast_is_typecast. reflexivity.
@@ -232,7 +208,7 @@ Qed.
 Lemma horizCast_is_dept{operad : Operad} {n m l i j : nat} {d : T}
           {a b c : list T} {q0 : 2 <= n} {q1 : 1<=m} {q2 : 1<=l} {p0: i<j} {p1: j<n}
           {s0 : length c = n} {s1 : length b = m} {s2 : length a = l} :
-  @horizCast operad n m l i j a b c d q0 q1 q2 p0 p1 s0 s2 s1 = dep_typecast (PA:= fun x => El (operad〘d,x〙))
+  @horizCast operad n m l i j a b c d q0 q1 q2 p0 p1 s0 s2 s1 = dep_typecast (PA:= fun x => operad〘d,x〙)
     (eq:= @horizInsert T n m l i j a b c q0 q1 q2 p0 p1 s0 s2 s1).
 Proof.
 reflexivity.
@@ -241,22 +217,21 @@ Qed.
 Lemma horizCast_is_typecast{operad : Operad} {n m l i j : nat} {d : T}
           {a b c : list T} {q0 : 2 <= n} {q1 : 1<=m} {q2 : 1<=l} {p0: i<j} {p1: j<n}
           {s0 : length c = n} {s1 : length b = m} {s2 : length a = l} :
-  @horizCast operad n m l i j a b c d q0 q1 q2 p0 p1 s0 s2 s1 = typecast (DepTypeeq  (PA:= fun x => El (operad〘d,x〙))
+  @horizCast operad n m l i j a b c d q0 q1 q2 p0 p1 s0 s2 s1 = typecast (DepTypeeq  (PA:= fun x => operad〘d,x〙)
     (@horizInsert T n m l i j a b c q0 q1 q2 p0 p1 s0 s2 s1)).
 Proof.
 rewrite horizCast_is_dept. rewrite dep_typecast_is_typecast. reflexivity.
 Qed.
 
 Lemma insertCast_is_typecast {i : nat} {d : T} {c b : list T} :
-  @insertCast i d c b = typecast El_insert_arr.
+  @insertCast i d c b = typecast insert_arr.
 Proof.
 reflexivity.
 Qed.
 
 Lemma insertCast0_is_typecast {i n : nat} {d ci : T} {c b : list T} 
   {l : length c = n} {n1 : 1 <= n} {il : i < n} {p : lookupT i c = ci} :
-  @insertCast0 i n d ci c b l n1 il p = typecast 
-  (eq_sym(El_fn_arr l n1 il p)).
+  @insertCast0 i n d ci c b l n1 il p = typecast (eq_sym (fn_arr l n1 il p)).
 Proof.
 reflexivity.
 Qed.
@@ -320,13 +295,13 @@ Qed.
 (* compose' is associative with an intermediate type list: *)
 Lemma compose'assoc {d ci bj : T} {a b1 : list T}
   (f : El (bj → (arr b1 ci))) (g : El (arr a bj)) (e : El (ci → d)) :
-  compose' (a++b1) e (typecast (eq_sym El_arr_append) (compose' a f g)) = 
-    typecast (eq_sym El_arr_append) (compose' a (compose' (bj::b1) e f) g).
+  compose' (a++b1) e (typecast (eq_sym arr_append) (compose' a f g)) = 
+    typecast (eq_sym arr_append) (compose' a (compose' (bj::b1) e f) g).
 Proof.
 induction a as [|h a IH].
 - simpl. rewrite !typecastSelf. reflexivity.
 - simpl. apply functional_extensionality.  intros x.
-  rewrite !(typecastFun (eq_sym El_arr_append)).
+  rewrite !(typecastFun (eq_sym arr_append)).
   apply IH.
 Qed.
 
@@ -334,10 +309,10 @@ Lemma compose_assoc {c0 c1 b0 b1 a cb b :list T} {d ci bj abcd : T}
   (eqcb: cb = c0 ++ b0)
   (eqb : b = b0 ++ bj::b1)
   (eqabcd : abcd = arr b1 (arr c1 d))
-  {eqf : Typeeq (El (arr b ci)) (El (arr b0 (bj → arr b1 ci)))}
-  {eqcef:Typeeq (El (arr c0 (arr b (arr c1 d)))) (El (arr (cb) (bj → abcd)))}
-  {eqcfg:Typeeq (El (arr b0 (arr a (arr b1 ci)))) (El (arr (b0++a++b1) ci))}
-  {eqt : Typeeq (El (arr c0 (arr (b0++a++b1) (arr c1 d)))) (El (arr (cb) (arr a abcd)))}
+  {eqf : (arr b ci) = (arr b0 (bj → arr b1 ci))}
+  {eqcef:(arr c0 (arr b (arr c1 d))) = (arr (cb) (bj → abcd))}
+  {eqcfg:(arr b0 (arr a (arr b1 ci))) = (arr (b0++a++b1) ci)}
+  {eqt : (arr c0 (arr (b0++a++b1) (arr c1 d))) = (arr (cb) (arr a abcd))}
    (e : El (arr c0 (ci → (arr c1 d)))) (f : El (arr b ci)) (g : El (arr a bj)):
   compose cb a (typecast eqcef (compose c0 b e f)) g = 
       typecast eqt (compose c0 (b0++a++b1) e (typecast eqcfg (compose b0 a (typecast eqf f) g))).
@@ -347,21 +322,21 @@ intros eqf eqcef eqcfg eqt f. clear eqcb eqabcd eqb cb abcd b.
 induction c0 as [|hc0 c0 IHc0].
 - simpl. induction b0 as [|hb0 b0 IHb0].
   + simpl. rewrite !typecastSelf.
-    retypecast eqcfg (eq_sym (@El_arr_append a b1 ci)). rewrite compose'assoc.
+    retypecast eqcfg (eq_sym (@arr_append a b1 ci)). rewrite compose'assoc.
     rewrite typecastCompose. symmetry. apply typecastSelf.
   + simpl. apply functional_extensionality. intros x.
-    rewrite (typecastFun (@El_arr_append b0 (bj::b1) (arr c1 d))).
-    rewrite (typecastFun El_double_arr_append).
-    rewrite (typecastFun (eq_sym El_double_arr_append)).
-    rewrite (typecastFun (@El_arr_append b0 (bj::b1) ci)).
+    rewrite (typecastFun (@arr_append b0 (bj::b1) (arr c1 d))).
+    rewrite (typecastFun double_arr_append).
+    rewrite (typecastFun (eq_sym double_arr_append)).
+    rewrite (typecastFun (@arr_append b0 (bj::b1) ci)).
     apply IHb0.
 - simpl. apply functional_extensionality. intros x.
-  assert (eqcefI : Typeeq (El (arr c0 (arr (b0 ++ bj :: b1) (arr c1 d))))
-                    (El (arr (c0 ++ b0) (bj → arr b1 (arr c1 d))))).
+  assert (eqcefI : (arr c0 (arr (b0 ++ bj :: b1) (arr c1 d))) =
+                    (arr (c0 ++ b0) (bj → arr b1 (arr c1 d)))).
     rewrite !arr_append. reflexivity.
   rewrite (typecastFun eqcefI).
-  assert (eqtI : Typeeq (El (arr c0 (arr (b0 ++ a ++ b1) (arr c1 d))))
-                  (El (arr (c0 ++ b0) (arr a (arr b1 (arr c1 d)))))).
+  assert (eqtI : (arr c0 (arr (b0 ++ a ++ b1) (arr c1 d))) =
+                  (arr (c0 ++ b0) (arr a (arr b1 (arr c1 d))))).
     rewrite !arr_append. reflexivity.
   rewrite (typecastFun eqtI).
   apply IHc0.
@@ -408,11 +383,11 @@ Lemma compose_horizAssoc {a b c c0 c0' c1 c2 c2' c0a1 c0i1 c1b2 c1j2 : list T} {
      (eqb : c1b2 = c1 ++ b ++ c2)
      (eqj : c1j2 = c1 ++ cj::c2)
      (eqc : c = c0 ++ (ci::c1) ++ (cj::c2))
-     {eqc0 : El (arr c d) = El (arr c0 (ci → (arr c1j2 d)))}
-     {eqc1 : El (arr c d) = El (arr c0i1 (cj → (arr c2 d)))}
-     {eqcef : El (arr c0 (arr a (arr c1j2 d))) = El (arr c0a1 (cj → (arr c2' d)))}
-     {eqceg : El (arr c0i1 (arr b (arr c2 d))) = El (arr c0' (ci → (arr c1b2 d)))}
-     {eqt : El (arr c0' (arr a (arr c1b2 d))) = El (arr c0a1 (arr b (arr c2' d)))}
+     {eqc0 : (arr c d) = (arr c0 (ci → (arr c1j2 d)))}
+     {eqc1 : (arr c d) = (arr c0i1 (cj → (arr c2 d)))}
+     {eqcef : (arr c0 (arr a (arr c1j2 d))) = (arr c0a1 (cj → (arr c2' d)))}
+     {eqceg : (arr c0i1 (arr b (arr c2 d))) = (arr c0' (ci → (arr c1b2 d)))}
+     {eqt : (arr c0' (arr a (arr c1b2 d))) = (arr c0a1 (arr b (arr c2' d)))}
      (e : El (setsOp〘d,c〙))
      (f : El (setsOp〘ci,a〙))
      (g : El (setsOp 〘cj,b〙)) :
@@ -427,39 +402,39 @@ induction c0 as [|hc0 tc0 IHc0].
   induction a as [|ha0 a0 IHa0].
   + simpl in eqcef. simpl in eqt. simpl in eqceg. 
     simpl.
-    rewrite (typecastFun (eq_sym El_double_arr_append)).
+    rewrite (typecastFun (eq_sym double_arr_append)).
     rewrite typecastCompose. rewrite !typecastSelf.
     f_equal. symmetry. apply typecastFun.
   + simpl in IHa0. simpl.
     apply functional_extensionality. intros x.
-    assert (eqcefI : El (arr a0 (arr (c1 ++ cj :: c2) d)) =
-                  El (arr (a0 ++ c1) (cj → arr c2 d))).
+    assert (eqcefI : (arr a0 (arr (c1 ++ cj :: c2) d)) =
+                  (arr (a0 ++ c1) (cj → arr c2 d))).
       rewrite !arr_append. reflexivity.
     rewrite (typecastFun eqcefI).
-    assert (eqtI : El (arr a0 (arr (c1 ++ b ++ c2) d)) =
-                El (arr (a0 ++ c1) (arr b (arr c2 d)))).
+    assert (eqtI : (arr a0 (arr (c1 ++ b ++ c2) d)) =
+                (arr (a0 ++ c1) (arr b (arr c2 d)))).
       rewrite !arr_append. reflexivity.
     rewrite (typecastFun eqtI).
     apply IHa0.
 - apply functional_extensionality. intros x. simpl.
-  assert (eqcefI : El (arr tc0 (arr a (arr (c1 ++ cj :: c2) d))) =
-                  El (arr (tc0 ++ a ++ c1) (cj → arr c2 d))).
+  assert (eqcefI : (arr tc0 (arr a (arr (c1 ++ cj :: c2) d))) =
+                  (arr (tc0 ++ a ++ c1) (cj → arr c2 d))).
       rewrite !arr_append. reflexivity.
   rewrite (typecastFun eqcefI).
-  assert (eqtI : El (arr tc0 (arr a (arr (c1 ++ b ++ c2) d))) =
-                El (arr (tc0 ++ a ++ c1) (arr b (arr c2 d)))).
+  assert (eqtI : (arr tc0 (arr a (arr (c1 ++ b ++ c2) d))) =
+                (arr (tc0 ++ a ++ c1) (arr b (arr c2 d)))).
       rewrite !arr_append. reflexivity.
   rewrite (typecastFun eqtI).
-  assert (eqcegI : El (arr (tc0 ++ ci :: c1) (arr b (arr c2 d))) =
-                  El (arr tc0 (ci → arr (c1 ++ b ++ c2) d))).
+  assert (eqcegI : (arr (tc0 ++ ci :: c1) (arr b (arr c2 d))) =
+                  (arr tc0 (ci → arr (c1 ++ b ++ c2) d))).
       rewrite !arr_append. reflexivity.
   rewrite (typecastFun eqcegI).
-  assert (eqc0I : El (arr (tc0 ++ (ci :: c1) ++ cj :: c2) d) =
-                 El (arr tc0 (ci → arr (c1 ++ cj :: c2) d))).
+  assert (eqc0I : (arr (tc0 ++ (ci :: c1) ++ cj :: c2) d) =
+                 (arr tc0 (ci → arr (c1 ++ cj :: c2) d))).
       rewrite !arr_append. reflexivity.
   rewrite (typecastFun eqc0I).
-  assert (eqc1I : El (arr (tc0 ++ (ci :: c1) ++ cj :: c2) d) =
-                 El (arr (tc0 ++ ci :: c1) (cj → arr c2 d))).
+  assert (eqc1I : (arr (tc0 ++ (ci :: c1) ++ cj :: c2) d) =
+                 (arr (tc0 ++ ci :: c1) (cj → arr c2 d))).
       rewrite !arr_append. reflexivity.
   rewrite (typecastFun eqc1I).
   apply IHc0.

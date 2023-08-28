@@ -1,6 +1,8 @@
 -R . Operads
 Typecast.v
-TColoredOperads.v
 ColoredOperads.v
 OperadOfSets.v
+Tarski.v
+TTypecast.v
+TColoredOperads.v
 TOperadOfSets.v
